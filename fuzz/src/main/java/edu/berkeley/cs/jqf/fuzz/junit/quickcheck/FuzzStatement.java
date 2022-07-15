@@ -46,7 +46,6 @@ import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
-import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
@@ -73,6 +72,7 @@ public class FuzzStatement extends Statement {
     private final List<Class<?>> expectedExceptions;
     private final List<Throwable> failures = new ArrayList<>();
     private final Guidance guidance;
+    private boolean skipExceptionSwallow;
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
                          GeneratorRepository generatorRepository, Guidance fuzzGuidance) {
@@ -83,6 +83,7 @@ public class FuzzStatement extends Statement {
         this.generatorRepository = generatorRepository;
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         this.guidance = fuzzGuidance;
+        this.skipExceptionSwallow = Boolean.getBoolean("skipExceptionSwallow");
     }
 
     /**
@@ -206,9 +207,11 @@ public class FuzzStatement extends Statement {
      * in the <code>throws</code> clause of the trial method.
      */
     private boolean isExceptionExpected(Class<? extends Throwable> e) {
-        for (Class<?> expectedException : expectedExceptions) {
-            if (expectedException.isAssignableFrom(e)) {
-                return true;
+        if (!this.skipExceptionSwallow) {
+            for (Class<?> expectedException : expectedExceptions) {
+                if (expectedException.isAssignableFrom(e)) {
+                    return true;
+                }
             }
         }
         return false;
