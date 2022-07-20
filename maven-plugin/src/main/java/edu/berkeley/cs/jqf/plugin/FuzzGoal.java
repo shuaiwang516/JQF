@@ -33,11 +33,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URLClassLoader;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
@@ -46,6 +48,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -55,6 +58,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.junit.runner.Result;
 
 import static edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader.stringsToUrls;
@@ -285,6 +289,54 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="fixedSize")
     private boolean fixedSizeInputs;
 
+    /**
+     *  Whether to set environment variables and system properties from
+     *  Maven-surefire-plugin.
+     *
+     *  <p>If this property is set to true, then JQF will set environment
+     *  variables and system properties extracted from maven-surefire-plugin.
+     *  </p>
+     *
+     *  <p>If not provided, defaults to {@code false}.</p>
+     */
+    @Parameter(property="setSurefireConfig")
+    private boolean setMavenSurefireConfiguration;
+
+    public static void setEnv(String key, String value) {
+        try {
+            Map<String, String> env = System.getenv();
+            Class<?> cl = env.getClass();
+            Field field = cl.getDeclaredField("m");
+            field.setAccessible(true);
+            Map<String, String> writableEnv = (Map<String, String>) field.get(env);
+            writableEnv.put(key, value);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to set environment variable", e);
+        }
+    }
+
+    public void setConfigurationFromMavenSurefire(Log log) {
+        for(Plugin p : project.getBuildPlugins()) {
+            if (p.getArtifactId().contains("maven-surefire-plugin")) {
+                Xpp3Dom environmentVariables = ((Xpp3Dom)p.getConfiguration()).getChild("environmentVariables");
+                Xpp3Dom systemPropertyVariables = ((Xpp3Dom)p.getConfiguration()).getChild("systemPropertyVariables");
+                for (int i = 0; i < environmentVariables.getChildCount(); i++) {
+                    Xpp3Dom child = environmentVariables.getChild(i);
+                    String envName = child.getName();
+                    String envValue = child.getValue();
+                    log.debug("Setting environment variable [" + envName + "] [" + envValue + "]");
+                    setEnv(envName, envValue);
+                }
+                for (int i = 0; i < systemPropertyVariables.getChildCount(); i++) {
+                    Xpp3Dom child = systemPropertyVariables.getChild(i);
+                    String systemPropertyName = child.getName();
+                    String systemPropertyValue = child.getValue();
+                    log.debug("Setting system property [" + systemPropertyName + "] [" + systemPropertyValue + "]");
+                    System.setProperty(systemPropertyName, systemPropertyValue);
+                }
+            }
+        }
+    }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -294,6 +346,11 @@ public class FuzzGoal extends AbstractMojo {
         PrintStream out = log.isDebugEnabled() ? System.out : null;
         Result result;
 
+        // Set Maven Surefire Configuration
+        if (setMavenSurefireConfiguration) {
+            System.out.println("Set Maven-Surefire-Plugin Configuration");
+            setConfigurationFromMavenSurefire(log);
+        }
         // Configure classes to instrument
         if (excludes != null) {
             System.setProperty("janala.excludes", excludes);
