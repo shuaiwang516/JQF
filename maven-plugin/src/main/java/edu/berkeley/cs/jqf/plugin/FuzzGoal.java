@@ -38,6 +38,7 @@ import java.net.MalformedURLException;
 import java.net.URLClassLoader;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -302,14 +303,19 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="setSurefireConfig")
     private boolean setMavenSurefireConfiguration;
 
-    public static void setEnv(String key, String value) {
+    public static void setEnv(Map<String, String> envMap, Log log) {
         try {
             Map<String, String> env = System.getenv();
             Class<?> cl = env.getClass();
             Field field = cl.getDeclaredField("m");
             field.setAccessible(true);
             Map<String, String> writableEnv = (Map<String, String>) field.get(env);
-            writableEnv.put(key, value);
+            for (Map.Entry<String, String> entry : envMap.entrySet()) {
+                String envName = entry.getKey();
+                String envValue = entry.getValue();
+                log.debug("Setting environment variable [" + envName + "] [" + envValue + "]");
+                writableEnv.put(envName, envValue);
+            }
         } catch (Exception e) {
             throw new IllegalStateException("Failed to set environment variable", e);
         }
@@ -320,13 +326,14 @@ public class FuzzGoal extends AbstractMojo {
             if (p.getArtifactId().contains("maven-surefire-plugin")) {
                 Xpp3Dom environmentVariables = ((Xpp3Dom)p.getConfiguration()).getChild("environmentVariables");
                 Xpp3Dom systemPropertyVariables = ((Xpp3Dom)p.getConfiguration()).getChild("systemPropertyVariables");
+                Map<String, String> envMap = new HashMap<>();
                 for (int i = 0; i < environmentVariables.getChildCount(); i++) {
                     Xpp3Dom child = environmentVariables.getChild(i);
                     String envName = child.getName();
                     String envValue = child.getValue();
-                    log.debug("Setting environment variable [" + envName + "] [" + envValue + "]");
-                    setEnv(envName, envValue);
+                    envMap.put(envName, envValue);
                 }
+                setEnv(envMap, log);
                 for (int i = 0; i < systemPropertyVariables.getChildCount(); i++) {
                     Xpp3Dom child = systemPropertyVariables.getChild(i);
                     String systemPropertyName = child.getName();
