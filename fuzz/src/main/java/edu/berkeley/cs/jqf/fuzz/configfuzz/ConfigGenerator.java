@@ -8,13 +8,15 @@ import java.util.*;
 
 public class ConfigGenerator {
 
+    /** Separator to split parameter key and value */
     private static String PARAM_EQUAL_MARK = "=";
+    /** Separator to split different parameters */
     private static String PARAM_VALUE_SPLITOR = ";";
-    /* File path that stores all parameter constraints (e.g., valid values) */
+    /** File path that stores all parameter constraints (e.g., valid values) */
     private static String constraintFile = null;
-    /* Mapping that keeps all parameter valid values supported (from the constraint file) */
+    /** Mapping that keeps all parameter valid values supported (from the constraint file) */
     private static Map<String, List<String>> paramConstraintMapping;
-    /* Print Debug Information */
+    /** Flag to print Debug Information */
     private static boolean debugEnabled = Boolean.getBoolean("generator.debug");
 
     static {
@@ -27,6 +29,10 @@ public class ConfigGenerator {
         }
     }
 
+    /**
+     * Read configuration parameter constraints from file;
+     * @return A map that stores the pair of parameter name (string) and potential valid values (list of string)
+     */
     public static Map<String, List<String>> getParamConstraintMapping() {
         if (paramConstraintMapping == null || paramConstraintMapping.size() == 0) {
             try {
@@ -68,15 +74,28 @@ public class ConfigGenerator {
         //return value;
     }
 
+    /**
+     * Return a random value from paramConstraintMapping if the parameter has constraint
+     * @param name parameter name
+     * @param random
+     * @return
+     */
     private static String randomValueFromConstraint(String name, SourceOfRandomness random) {
         return random.choose(paramConstraintMapping.get(name));
     }
 
+    /**
+     * Check whether a parameter has constraint
+     * @param name parameter name
+     * @return True if has constraint
+     */
     private static boolean paramHasConstraints(String name) {
         debugPrint(String.valueOf(paramConstraintMapping.containsKey(name)));
         return paramConstraintMapping.containsKey(name);
     }
 
+
+    /** Helper Functions */
     private static Map<String, List<String>> parseParamConstraint() throws IOException {
         Map<String, List<String>> result = new HashMap<String, List<String>>();
         File file = Paths.get(constraintFile).toFile();
@@ -99,8 +118,6 @@ public class ConfigGenerator {
         return result;
     }
 
-
-    /** Helper Functions */
     private static boolean isInteger(String value) {
         try {
             int i = Integer.parseInt(value);
