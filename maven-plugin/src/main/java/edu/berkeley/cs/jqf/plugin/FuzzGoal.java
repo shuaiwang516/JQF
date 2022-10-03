@@ -43,8 +43,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import edu.berkeley.cs.jqf.fuzz.configfuzz.ConfigTracker;
+import edu.berkeley.cs.jqf.fuzz.configfuzz.DefConfCollectionGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
@@ -303,6 +306,19 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="setSurefireConfig")
     private boolean setMavenSurefireConfiguration;
 
+    /**
+     *  Whether to run JQF with configuration fuzzing
+     *
+     *  <p>If this property is set to true, there is a non-fuzzed pre round
+     *  to collect the exercised configuration parameter set for the under
+     *  fuzzing test
+     *  </p>
+     *
+     *  <p>If not provided, defaults to {@code false}.</p>
+     */
+    @Parameter(property="configFuzz")
+    private boolean configurationFuzzing;
+
     public static void setEnv(Map<String, String> envMap, Log log) {
         try {
             Map<String, String> env = System.getenv();
@@ -348,7 +364,7 @@ public class FuzzGoal extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
-        ZestGuidance guidance;
+        Guidance guidance;
         Log log = getLog();
         PrintStream out = log.isDebugEnabled() ? System.out : null;
         Result result;
@@ -420,6 +436,26 @@ public class FuzzGoal extends AbstractMojo {
         String targetName = testClassName + "#" + testMethod;
         File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
         Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
+
+        if (configurationFuzzing) {
+            // Pre round for test to get default configuration
+            guidance = new DefConfCollectionGuidance(out);
+            try {
+                result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
+                log.debug("After preRound mapping size = " + ConfigTracker.getMapSize());
+                System.out.println("[JQF] After preRound mapping size = " + ConfigTracker.getMapSize());
+            } catch (ClassNotFoundException e) {
+                throw new MojoExecutionException("Could not load test class", e);
+            } catch (IllegalArgumentException e) {
+                throw new MojoExecutionException("Bad request", e);
+            } catch (RuntimeException e) {
+                throw new MojoExecutionException("Internal error", e);
+            }
+            if (!result.wasSuccessful()) {
+                throw new MojoFailureException("Pre Round for Configuration Fuzzing is not successful");
+            }
+        }
+
         try {
             switch (engine) {
                 case "zest":

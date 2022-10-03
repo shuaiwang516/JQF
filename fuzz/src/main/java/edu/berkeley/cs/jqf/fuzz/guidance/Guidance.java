@@ -168,6 +168,8 @@ public interface Guidance {
      */
     void handleResult(Result result, Throwable error) throws GuidanceException;
 
+    void setBlind(boolean blind);
+
     /**
      * Returns a callback generator for a thread's event trace.
      *

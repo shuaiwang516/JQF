@@ -330,6 +330,11 @@ public class AFLGuidance implements Guidance {
 
     }
 
+    @Override
+    public void setBlind(boolean blind) {
+        return;
+    }
+
     /**
      * Returns a callback to handle trace events.
      *

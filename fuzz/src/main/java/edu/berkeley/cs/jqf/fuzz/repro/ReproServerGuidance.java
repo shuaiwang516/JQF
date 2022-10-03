@@ -115,6 +115,11 @@ public class ReproServerGuidance implements Guidance {
     }
 
     @Override
+    public void setBlind(boolean blind) {
+        return;
+    }
+
+    @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
         return coverage::handleEvent;
     }

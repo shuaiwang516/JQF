@@ -125,6 +125,11 @@ public class NoGuidance implements Guidance {
         }
     }
 
+    @Override
+    public void setBlind(boolean blind) {
+        return;
+    }
+
     /**
      * Returns a callback that does almost nothing.
      *
