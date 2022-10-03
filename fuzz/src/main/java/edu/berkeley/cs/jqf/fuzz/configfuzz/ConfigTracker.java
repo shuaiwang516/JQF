@@ -35,6 +35,9 @@ public class ConfigTracker {
     }
 
     public static int getMapSize() {
+        if (configMap == null) {
+            return 0;
+        }
         return configMap.size();
     }
 }
