@@ -69,9 +69,7 @@ public class ConfigGenerator {
         }
         // for now we only fuzz numeric and boolean configuration parameters.
         String returnStr = String.valueOf(random.nextBytes(10));
-        //System.out.println("Generating random String for " + name + " : " + returnStr);
         return returnStr;
-        //return value;
     }
 
     /**
@@ -120,7 +118,7 @@ public class ConfigGenerator {
 
     private static boolean isInteger(String value) {
         try {
-            int i = Integer.parseInt(value);
+            Integer.parseInt(value);
         } catch (NumberFormatException e) {
             return false;
         }
@@ -137,7 +135,7 @@ public class ConfigGenerator {
 
     private static boolean isFloat(String value) {
         try {
-            float f = Float.parseFloat(value);
+            Float.parseFloat(value);
         } catch (NumberFormatException e) {
             return false;
         }
