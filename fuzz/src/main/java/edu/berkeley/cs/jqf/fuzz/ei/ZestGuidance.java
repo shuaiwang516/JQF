@@ -87,7 +87,7 @@ import static java.lang.Math.log;
 public class ZestGuidance implements Guidance {
 
     /** Separator for configuration parameter in saved configuration file */
-    protected final String configSeparator = " :=: ";
+    public static final String configSeparator = " :=: ";
 
     /** A pseudo-random number generator for generating fresh values. */
     protected Random random;

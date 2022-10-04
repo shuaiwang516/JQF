@@ -28,15 +28,14 @@
  */
 package edu.berkeley.cs.jqf.plugin;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.util.*;
 
+import edu.berkeley.cs.jqf.fuzz.configfuzz.ConfigTracker;
+import edu.berkeley.cs.jqf.fuzz.configfuzz.DefConfCollectionGuidance;
+import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
@@ -174,6 +173,22 @@ public class ReproGoal extends AbstractMojo {
     @Parameter(property="setSurefireConfig")
     private boolean setMavenSurefireConfiguration;
 
+    /**
+     *  Whether to run JQF with configuration fuzzing
+     *
+     *  <p>If this property is set to true, there is a non-fuzzed pre round
+     *  to collect the exercised configuration parameter set for the under
+     *  fuzzing test
+     *  </p>
+     *
+     *  <p>If not provided, defaults to {@code false}.</p>
+     */
+    @Parameter(property="configFuzz")
+    private boolean configurationFuzzing;
+
+    @Parameter(property="notPrintConfig")
+    private boolean notPrintConfig;
+
     // For configuration fuzzing project -- a flag to check whether to print out the current
     // changed configuration or not.
     private String isReproGoal = "repro.info";
@@ -225,13 +240,14 @@ public class ReproGoal extends AbstractMojo {
         System.setProperty(isReproGoal, "true");
         ClassLoader loader;
         ReproGuidance guidance;
+        DefConfCollectionGuidance preRoundGuidance;
         Log log = getLog();
         PrintStream out = System.out; // TODO: Re-route to logger from super.getLog()
         Result result;
 
         // Set Maven Surefire Configuration
         if (setMavenSurefireConfiguration) {
-            System.out.println("Set Maven-Surefire-Plugin Configuration");
+            out.println("Set Maven-Surefire-Plugin Configuration");
             setConfigurationFromMavenSurefire(log);
         }
         // Configure classes to instrument
@@ -268,8 +284,35 @@ public class ReproGoal extends AbstractMojo {
         }
 
         File inputFile = new File(input);
+        File configFile = new File(input.replace("id", "config"));
         if (!inputFile.exists() || !inputFile.canRead()) {
             throw new MojoExecutionException("Cannot find or open file " + input);
+        }
+        if (!configFile.exists() || !configFile.canRead()) {
+            throw new MojoExecutionException("Cannot find or open file " + configFile);
+        }
+
+        // Pre round to get default configuration set
+        if (configurationFuzzing) {
+            // Pre round for test to get default configuration
+            preRoundGuidance = new DefConfCollectionGuidance(out);
+            try {
+                result = GuidedFuzzing.run(testClassName, testMethod, loader, preRoundGuidance, out);
+                log.debug("After preRound mapping size = " + ConfigTracker.getMapSize());
+                System.out.println("[JQF] After preRound mapping size = " + ConfigTracker.getMapSize());
+                printChangedConfig(configFile, out);
+            } catch (ClassNotFoundException e) {
+                throw new MojoExecutionException("Could not load test class", e);
+            } catch (IllegalArgumentException e) {
+                throw new MojoExecutionException("Bad request", e);
+            } catch (RuntimeException e) {
+                throw new MojoExecutionException("Internal error", e);
+            } catch (IOException e) {
+                throw new MojoExecutionException("Pre round error", e);
+            }
+            if (!result.wasSuccessful()) {
+                throw new MojoFailureException("Pre Round for Configuration Fuzzing is not successful");
+            }
         }
 
         try {
@@ -303,6 +346,36 @@ public class ReproGoal extends AbstractMojo {
 
         if (!result.wasSuccessful()) {
             throw new MojoFailureException("Test case produces a failure.");
+        }
+    }
+
+    private void printChangedConfig(File configFile, PrintStream out) throws IOException {
+        if (!configurationFuzzing || notPrintConfig) {
+            return;
+        }
+        Map<String, String> configMap = ConfigTracker.getConfigMap();
+        if (configMap == null || configMap.size() == 0) {
+            throw new RuntimeException("No default configuration tracked - Please " +
+                    "check pre-round is executed correctly");
+        }
+
+        BufferedReader br = new BufferedReader(new FileReader(configFile));
+        String line;
+        while ((line = br.readLine())!= null) {
+            String [] pair = line.split(ZestGuidance.configSeparator);
+            if (pair.length != 2) {
+                throw new IOException("Unable to split configuration parameter and value: " + line);
+            }
+            String key = pair[0];
+            String value = pair[1];
+            if (configMap.containsKey(key)) {
+                String defaultValue = configMap.get(key);
+                if (!Objects.equals(value, defaultValue)) {
+                    out.println("[CONFIG-CHANGE] " + key + " = " + defaultValue + " -> " + value);
+                }
+            } else {
+                out.println("[CONFIG-CHANGE] " + key + " = no-default -> " + value);
+            }
         }
     }
 }
