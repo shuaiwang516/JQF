@@ -292,6 +292,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                         // Third, store basic book-keeping data
                         currentInput.id = otherIdx;
                         currentInput.saveFile = otherInput.saveFile;
+                        currentInput.configFile = otherInput.configFile;
                         currentInput.coverage = runCoverage.copy();
                         currentInput.nonZeroCoverage = runCoverage.getNonZeroCount();
                         currentInput.offspring = 0;
@@ -300,6 +301,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                         // Finally, overwrite the saved input file on disc
                         try {
                             writeCurrentInputToFile(currentInput.saveFile);
+                            writeCurrentConfigToFile(currentInput.configFile);
                         } catch (IOException e) {
                             throw new GuidanceException(e);
                         }

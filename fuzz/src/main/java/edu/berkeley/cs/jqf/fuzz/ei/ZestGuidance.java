@@ -86,6 +86,9 @@ import static java.lang.Math.log;
  */
 public class ZestGuidance implements Guidance {
 
+    /** Separator for configuration parameter in saved configuration file */
+    protected final String configSeparator = " :=: ";
+
     /** A pseudo-random number generator for generating fresh values. */
     protected Random random;
 
@@ -809,8 +812,11 @@ public class ZestGuidance implements Guidance {
                     // Save crash to disk
                     int crashIdx = uniqueFailures.size() - 1;
                     String saveFileName = String.format("id_%06d", crashIdx);
+                    String configFileName = String.format("config_%06d", crashIdx);
                     File saveFile = new File(savedFailuresDirectory, saveFileName);
+                    File configFile = new File(savedFailuresDirectory, configFileName);
                     GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
+                    GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
                     infoLog("%s", "Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
@@ -837,8 +843,11 @@ public class ZestGuidance implements Guidance {
             if (LOG_ALL_INPUTS && (SAVE_ONLY_VALID ? valid : true)) {
                 File logDirectory = new File(allInputsDirectory, result.toString().toLowerCase());
                 String saveFileName = String.format("id_%09d", numTrials);
+                String configFileName = String.format("config_%06d", numTrials);
                 File saveFile = new File(logDirectory, saveFileName);
+                File configFile = new File(savedFailuresDirectory, configFileName);
                 GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
+                GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
             }
         });
     }
@@ -957,15 +966,31 @@ public class ZestGuidance implements Guidance {
 
     }
 
+    protected void writeCurrentConfigToFile(File configFile) throws IOException {
+        // No need to write configuration file if it is not configuration fuzzing
+        if (!Boolean.getBoolean("configFuzz"))
+            return;
+        try (PrintWriter out = new PrintWriter(new FileWriter(configFile, false))) {
+            for (Map.Entry<String, String> entry : ConfigTracker.getConfigMap().entrySet()) {
+                String paramName = entry.getKey();
+                String paramValue = entry.getValue();
+                out.write(paramName + configSeparator + paramValue + "\n");
+            }
+        }
+    }
+
     /* Saves an interesting input to the queue. */
     protected void saveCurrentInput(IntHashSet responsibilities, String why) throws IOException {
 
         // First, save to disk (note: we issue IDs to everyone, but only write to disk  if valid)
         int newInputIdx = numSavedInputs++;
         String saveFileName = String.format("id_%06d", newInputIdx);
+        String configFileName = String.format("config_%06d", newInputIdx);
         String how = currentInput.desc;
         File saveFile = new File(savedCorpusDirectory, saveFileName);
+        File configFile = new File(savedCorpusDirectory, configFileName);
         writeCurrentInputToFile(saveFile);
+        writeCurrentConfigToFile(configFile);
         infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
 
         // If not using guidance, do nothing else
@@ -979,6 +1004,7 @@ public class ZestGuidance implements Guidance {
         // Third, store basic book-keeping data
         currentInput.id = newInputIdx;
         currentInput.saveFile = saveFile;
+        currentInput.configFile = configFile;
         currentInput.coverage = runCoverage.copy();
         currentInput.nonZeroCoverage = runCoverage.getNonZeroCount();
         currentInput.offspring = 0;
@@ -1090,6 +1116,13 @@ public class ZestGuidance implements Guidance {
          * <p>This field is null for inputs that are not saved.</p>
          */
         File saveFile = null;
+
+        /**
+         * The file where this configuration parameter is saved.
+         *
+         * <p>This field is null for inputs that are not saved.</p>
+         */
+        File configFile = null;
 
         /**
          * An ID for a saved input.
