@@ -143,7 +143,7 @@ public class ConfigGenerator {
     }
 
     public static boolean isNullOrEmpty(String value) {
-        return value.equals("null") || value == null || value.equals("");
+        return value == null || value.equals("null") || value.equals("");
     }
 
     /** For Internal test */

@@ -64,6 +64,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 import static edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader.stringsToUrls;
 
@@ -452,6 +453,9 @@ public class FuzzGoal extends AbstractMojo {
                 throw new MojoExecutionException("Internal error", e);
             }
             if (!result.wasSuccessful()) {
+                for (Failure f : result.getFailures()) {
+                    System.out.println(f.getMessage() + " " + f.getDescription() + " " + f.getTrace());
+                }
                 throw new MojoFailureException("Pre Round for Configuration Fuzzing is not successful");
             }
         }
