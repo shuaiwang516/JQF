@@ -51,7 +51,7 @@ public class ConfigGenerator {
      * @param value
      * @return
      */
-    // TODO: Types can be cached the type rather than doing it for mutiple times.
+    // TODO: Types can be cached the type rather than doing it for multiple times.
     // Pass the type instead of the value and check the type
     public static String randomValue(String name, String value, SourceOfRandomness random) {
         // TODO: Next to find a way to randomly generate string that we don't know

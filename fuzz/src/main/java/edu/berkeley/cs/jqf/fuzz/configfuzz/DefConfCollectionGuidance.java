@@ -58,6 +58,9 @@ public class DefConfCollectionGuidance implements Guidance {
         if (result == Result.INVALID) {
             finishPreRound = false;
             System.setProperty(isPreRound, "true");
+            System.out.println("[JQF] Pre round result is invalid ");
+            error.printStackTrace(System.out);
+            throw new RuntimeException(error);
         }
         System.out.println("[JQF] After pre round flag = " + System.getProperty(isPreRound));
     }
