@@ -363,11 +363,18 @@ public class ReproGoal extends AbstractMojo {
         String line;
         while ((line = br.readLine())!= null) {
             String [] pair = line.split(ZestGuidance.configSeparator);
-            if (pair.length != 2) {
+            String key = null;
+            String value = null;
+            if (pair.length == 1) {
+                key = pair[0];
+                value = "null";
+            } else if (pair.length == 2) {
+                key = pair[0];
+                value = pair[1];
+            }
+            else if (pair.length > 2 || key == null || value == null) {
                 throw new IOException("Unable to split configuration parameter and value: " + line);
             }
-            String key = pair[0];
-            String value = pair[1];
             if (configMap.containsKey(key)) {
                 String defaultValue = configMap.get(key);
                 if (!Objects.equals(value, defaultValue)) {
