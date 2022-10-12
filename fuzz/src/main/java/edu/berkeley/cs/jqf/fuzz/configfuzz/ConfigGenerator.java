@@ -63,9 +63,9 @@ public class ConfigGenerator {
         if (isBoolean(value)) {
             return String.valueOf(random.nextBoolean());
         } else if (isInteger(value)) {
-            return String.valueOf(random.nextInt());
+            return String.valueOf(Math.abs(random.nextInt()));
         } else if (isFloat(value)) {
-            return String.valueOf(random.nextFloat());
+            return String.valueOf(Math.abs(random.nextFloat()));
         }
         // for now we only fuzz numeric and boolean configuration parameters.
         String returnStr = String.valueOf(random.nextBytes(10));
