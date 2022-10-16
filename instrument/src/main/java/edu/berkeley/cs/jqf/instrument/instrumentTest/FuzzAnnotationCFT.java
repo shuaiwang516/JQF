@@ -58,7 +58,6 @@ public class FuzzAnnotationCFT implements ClassFileTransformer {
                 return super.visitAnnotation("Ledu/berkeley/cs/jqf/fuzz/Fuzz;", true);
             }
         }
-
     }
 
     public static byte[] transf(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
@@ -67,7 +66,7 @@ public class FuzzAnnotationCFT implements ClassFileTransformer {
             ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             FuzzAnnotationClassVisitor visitor = new FuzzAnnotationClassVisitor(classWriter);
             classReader.accept(visitor, 0);
-            Debug.write("/Users/alenwang/Documents/xlab/junit4_demo/debugFile.class", classWriter.toByteArray());
+            Debug.write("/Users/alenwang/Documents/xlab/fuzz-hadoop/hadoop-common-project/hadoop-common/debug.class", classWriter.toByteArray());
             Log.d2f("transf1");
             return classWriter.toByteArray();
             //return classfileBuffer;
