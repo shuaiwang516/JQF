@@ -36,6 +36,29 @@ public class FuzzAnnotationCFT implements ClassFileTransformer {
             av.visitEnd();
             super.visitEnd();
         }
+
+        // Add @Fuzz to method
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+            MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
+            if(name.equals(Utils.getCurrentMethod())) {
+                mv = new FuzzAnnotationMethodVisitor(mv);
+            }
+            return mv;
+        }
+
+        private static class FuzzAnnotationMethodVisitor extends MethodVisitor {
+            public FuzzAnnotationMethodVisitor(MethodVisitor mv) {
+                super(Instr.ASM_API_VERSION, mv);
+            }
+
+            @Override
+            public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+                return super.visitAnnotation("Ledu/berkeley/cs/jqf/fuzz/Fuzz;", true);
+            }
+        }
+
     }
 
     public static byte[] transf(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
