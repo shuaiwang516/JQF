@@ -70,8 +70,8 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Premain-Class>edu.berkeley.cs.jqf.fuzz.instrumentTest.Agent</Premain-Class>
-                            <Agent-Class>edu.berkeley.cs.jqf.fuzz.instrumentTest.Agent</Agent-Class>
+                            <Premain-Class>edu.berkeley.cs.jqf.instrument.instrumentTest.Agent</Premain-Class>
+                            <Agent-Class>edu.berkeley.cs.jqf.instrument.instrumentTest.Agent</Agent-Class>
                             <Can-Redefine-Classes>true</Can-Redefine-Classes>
                             <Can-Retransform-Classes>true</Can-Retransform-Classes>
                         </manifestEntries>

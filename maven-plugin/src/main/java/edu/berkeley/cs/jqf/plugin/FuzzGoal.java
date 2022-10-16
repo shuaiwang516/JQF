@@ -49,7 +49,7 @@ import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
-import edu.berkeley.cs.jqf.fuzz.instrumentTest.AgentLoader;
+import edu.berkeley.cs.jqf.instrument.instrumentTest.AgentLoader;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -439,9 +439,9 @@ public class FuzzGoal extends AbstractMojo {
         File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
         Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
 
-        edu.berkeley.cs.jqf.fuzz.log.Log.d2f("Before load");
-        AgentLoader.loadEkstaziAgent();
-        edu.berkeley.cs.jqf.fuzz.log.Log.d2f("After load");
+//        edu.berkeley.cs.jqf.instrument.log.Log.d2f("Before load");
+//        AgentLoader.loadJQFAgent();
+//        edu.berkeley.cs.jqf.instrument.log.Log.d2f("After load");
 
         if (configurationFuzzing) {
             // Pre round for test to get default configuration
