@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Agent-Class: edu.berkeley.cs.jqf.fuzz.instrumentTest.Agent
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+Premain-Class: edu.berkeley.cs.jqf.fuzz.instrumentTest.Agent
+Created-By: Shuai Wang <swang516@illinois.edu>

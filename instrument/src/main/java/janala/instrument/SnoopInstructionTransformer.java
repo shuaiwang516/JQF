@@ -47,6 +47,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
         }
       }
     }
+    throw new RuntimeException("123123");
   }
 
   private static void preloadClasses() throws ClassNotFoundException {
