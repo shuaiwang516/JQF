@@ -1,7 +1,7 @@
 package edu.berkeley.cs.jqf.instrument.instrumentTest;
 
-import edu.berkeley.cs.jqf.instrument.asm.*;
 import edu.berkeley.cs.jqf.instrument.log.Log;
+import org.objectweb.asm.*;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -12,7 +12,7 @@ public class FuzzAnnotationCFT implements ClassFileTransformer {
     public static class FuzzAnnotationClassVisitor extends ClassVisitor {
         private Boolean runWithByASM = false;
         public FuzzAnnotationClassVisitor(ClassVisitor cv) {
-            super(Instr.ASM_API_VERSION, cv);
+            super(Opcodes.ASM9, cv);
         }
 
         @Override
@@ -31,26 +31,46 @@ public class FuzzAnnotationCFT implements ClassFileTransformer {
         public void visitEnd() {
             runWithByASM = true;
             AnnotationVisitor av = this.visitAnnotation("Lorg/junit/runner/RunWith;", true);
-            //av = av.visitArray("value");
             av.visit("value", Type.getObjectType("edu/berkeley/cs/jqf/fuzz/JQF"));
             av.visitEnd();
             super.visitEnd();
         }
 
-        // Add @Fuzz to method
-
+        /*
+        (1) Replace @Test with @Fuzz
+        (2) Add (@From(ConfigurationGenerator.class) Configuration generated) as argument
+         */
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-            MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv;
             if(name.equals(Utils.getCurrentMethod())) {
-                mv = new FuzzAnnotationMethodVisitor(mv);
+                mv = new FuzzAnnotationMethodVisitor(super.visitMethod(access, name, "(Lorg/apache/hadoop/conf/Configuration;)V",
+                        signature, exceptions));
+            } else {
+                 mv = super.visitMethod(access, name, desc, signature, exceptions);
             }
             return mv;
         }
 
         private static class FuzzAnnotationMethodVisitor extends MethodVisitor {
             public FuzzAnnotationMethodVisitor(MethodVisitor mv) {
-                super(Instr.ASM_API_VERSION, mv);
+                super(Opcodes.ASM9, mv);
+            }
+
+            @Override
+            public void visitCode() {
+                AnnotationVisitor annotationVisitor0;
+                annotationVisitor0 = super.visitTypeAnnotation(22, null, "Lcom/pholser/junit/quickcheck/From;", true);
+                annotationVisitor0.visit("value", Type.getType("Lorg/apache/hadoop/conf/Configuration;"));
+                annotationVisitor0.visitEnd();
+
+                super.visitAnnotableParameterCount(1, true);
+
+                annotationVisitor0 = super.visitParameterAnnotation(0, "Lcom/pholser/junit/quickcheck/From;", true);
+                annotationVisitor0.visit("value", Type.getType("Lorg/apache/hadoop/conf/ConfigurationGenerator;"));
+                annotationVisitor0.visitEnd();
+
+                super.visitCode();
             }
 
             @Override
@@ -66,7 +86,7 @@ public class FuzzAnnotationCFT implements ClassFileTransformer {
             ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             FuzzAnnotationClassVisitor visitor = new FuzzAnnotationClassVisitor(classWriter);
             classReader.accept(visitor, 0);
-            Debug.write("/Users/alenwang/Documents/xlab/fuzz-hadoop/hadoop-common-project/hadoop-common/debug.class", classWriter.toByteArray());
+            Debug.write("/Users/alenwang/Documents/xlab/junit4_demo/debugFile.class", classWriter.toByteArray());
             Log.d2f("transf1");
             return classWriter.toByteArray();
             //return classfileBuffer;

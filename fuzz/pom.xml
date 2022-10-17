@@ -69,12 +69,6 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <archive>
-                        <manifestEntries>
-                            <Premain-Class>edu.berkeley.cs.jqf.instrument.instrumentTest.Agent</Premain-Class>
-                            <Agent-Class>edu.berkeley.cs.jqf.instrument.instrumentTest.Agent</Agent-Class>
-                            <Can-Redefine-Classes>true</Can-Redefine-Classes>
-                            <Can-Retransform-Classes>true</Can-Retransform-Classes>
-                        </manifestEntries>
 <!--                        <manifestFile>META-INF/MANIFEST.MF</manifestFile>-->
 <!--                        <addMavenDescriptor>false</addMavenDescriptor>-->
                     	<manifest>
