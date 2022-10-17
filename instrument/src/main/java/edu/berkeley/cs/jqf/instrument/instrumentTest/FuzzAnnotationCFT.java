@@ -86,12 +86,9 @@ public class FuzzAnnotationCFT implements ClassFileTransformer {
             ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             FuzzAnnotationClassVisitor visitor = new FuzzAnnotationClassVisitor(classWriter);
             classReader.accept(visitor, 0);
-            Debug.write("/Users/alenwang/Documents/xlab/junit4_demo/debugFile.class", classWriter.toByteArray());
-            Log.d2f("transf1");
+            //Debug.write("/Users/alenwang/Documents/xlab/junit4_demo/debugFile.class", classWriter.toByteArray());
             return classWriter.toByteArray();
-            //return classfileBuffer;
         }
-        Log.d2f("transf2");
         return null;
     }
 }
