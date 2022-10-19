@@ -31,11 +31,10 @@ public class ConfigTracker {
      * Get configMap
      * @return A map stores the pairs of configuration parameter name and value
      */
-    public static Map<String, String> getConfigMap() {
-        if (configMap == null) {
-            return new TreeMap<>();
-        }
-        return configMap;
+    public synchronized static Map<String, String> getConfigMap() {
+        Map<String, String> res = new TreeMap<>();
+        res.putAll(configMap);
+        return res;
     }
 
     /**
@@ -54,7 +53,7 @@ public class ConfigTracker {
      * Get the size of configMap
      * @return
      */
-    public static int getMapSize() {
+    public synchronized static int getMapSize() {
         if (configMap == null) {
             return 0;
         }
