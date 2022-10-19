@@ -668,7 +668,6 @@ public class ZestGuidance implements Guidance {
                 // First, if we have some specific seeds, use those
                 currentInput = seedInputs.removeFirst();
                 parentInput = currentInput;
-                System.out.println("Current = Parent");
                 // Hopefully, the seeds will lead to new coverage and be added to saved inputs
 
             } else if (savedInputs.isEmpty()) {
@@ -682,7 +681,6 @@ public class ZestGuidance implements Guidance {
                 // infoLog("Spawning new input from thin air");
                 currentInput = createFreshInput();
                 parentInput = currentInput;
-                System.out.println("Current = Parent");
             } else {
                 // The number of children to produce is determined by how much of the coverage
                 // pool this parent input hits
@@ -701,7 +699,6 @@ public class ZestGuidance implements Guidance {
                 }
                 Input parent = savedInputs.get(currentParentInputIdx);
                 parentInput = parent;
-                System.out.println("Current != Parent");
                 // Fuzz it to get a new input
                 // infoLog("Mutating input: %s", parent.desc);
                 currentInput = parent.fuzz(random);
