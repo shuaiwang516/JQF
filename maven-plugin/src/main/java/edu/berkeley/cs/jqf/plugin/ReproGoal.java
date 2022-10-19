@@ -289,13 +289,9 @@ public class ReproGoal extends AbstractMojo {
         }
 
         File inputFile = new File(input);
-        File configFile = new File(input.replace("id", "config"));
 
         if (!inputFile.exists() || !inputFile.canRead()) {
             throw new MojoExecutionException("Cannot find or open file " + input);
-        }
-        if (!configFile.exists() || !configFile.canRead()) {
-            throw new MojoExecutionException("Cannot find or open file " + configFile);
         }
 
         // Pre round to get default configuration set and parent round to get the parent configuration value set
@@ -313,7 +309,7 @@ public class ReproGoal extends AbstractMojo {
                 pre_result = GuidedFuzzing.run(testClassName, testMethod, loader, preRoundGuidance, out);
                 log.debug("[JQF] Num of fuzzed config parameter = " + ConfigTracker.getMapSize());
                 System.out.println("[JQF] Num of fuzzed config parameter = " + ConfigTracker.getMapSize());
-                printChangedConfig(configFile, out);
+
                 // Parent round to get parent configuration change
                 guidance = new ReproGuidance(parentFile, null);
                 parent_result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
@@ -390,42 +386,5 @@ public class ReproGoal extends AbstractMojo {
             }
         }
 
-    }
-
-    private void printChangedConfig(File configFile, PrintStream out) throws IOException {
-        if (!configurationFuzzing || notPrintConfig) {
-            return;
-        }
-        Map<String, String> configMap = ConfigTracker.getConfigMap();
-        if (configMap == null || configMap.size() == 0) {
-            throw new RuntimeException("No default configuration tracked - Please " +
-                    "check pre-round is executed correctly");
-        }
-
-        BufferedReader br = new BufferedReader(new FileReader(configFile));
-        String line;
-        while ((line = br.readLine())!= null) {
-            String [] pair = line.split(ZestGuidance.configSeparator);
-            String key = null;
-            String value = null;
-            if (pair.length == 1) {
-                key = pair[0];
-                value = "null";
-            } else if (pair.length == 2) {
-                key = pair[0];
-                value = pair[1];
-            }
-            else if (pair.length > 2 || key == null || value == null) {
-                throw new IOException("Unable to split configuration parameter and value: " + line);
-            }
-            if (configMap.containsKey(key)) {
-                String defaultValue = configMap.get(key);
-                if (!Objects.equals(value, defaultValue)) {
-                    out.println("[DEF-CONFIG-CHANGE] " + key + " = " + defaultValue + " -> " + value);
-                }
-            } else {
-                out.println("[CONFIG-CHANGE] " + key + " = no-default -> " + value);
-            }
-        }
     }
 }
