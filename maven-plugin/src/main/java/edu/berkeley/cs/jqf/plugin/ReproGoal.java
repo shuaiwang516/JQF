@@ -306,11 +306,13 @@ public class ReproGoal extends AbstractMojo {
             Result pre_result;
             Result parent_result;
             try {
+                out.println("==================================Pre-Round==================================");
                 pre_result = GuidedFuzzing.run(testClassName, testMethod, loader, preRoundGuidance, out);
                 log.debug("[JQF] Num of fuzzed config parameter = " + ConfigTracker.getMapSize());
                 System.out.println("[JQF] Num of fuzzed config parameter = " + ConfigTracker.getMapSize());
 
                 // Parent round to get parent configuration change
+                out.println("==================================Parent-Round==================================");
                 guidance = new ReproGuidance(parentFile, null);
                 parent_result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
                 parentConfig.putAll(ConfigTracker.getConfigMap());
@@ -336,6 +338,7 @@ public class ReproGoal extends AbstractMojo {
 
         try {
             guidance = new ReproGuidance(inputFile, null);
+            out.println("==================================Failure-Round==================================");
             result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
             if (configurationFuzzing) {
                 failedConfig.putAll(ConfigTracker.getConfigMap());
