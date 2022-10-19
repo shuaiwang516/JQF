@@ -186,8 +186,8 @@ public class ReproGoal extends AbstractMojo {
     @Parameter(property="configFuzz")
     private boolean configurationFuzzing;
 
-    @Parameter(property="notPrintConfig")
-    private boolean notPrintConfig;
+    @Parameter(property="printConfig")
+    private boolean printConfig;
 
     // For configuration fuzzing project -- a flag to check whether to print out the current
     // changed configuration or not.
@@ -314,6 +314,9 @@ public class ReproGoal extends AbstractMojo {
                 guidance = new ReproGuidance(parentFile, null);
                 parent_result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
                 parentConfig.putAll(ConfigTracker.getConfigMap());
+                if (printConfig) {
+                    printMap(parentConfig, out);
+                }
             } catch (ClassNotFoundException e) {
                 throw new MojoExecutionException("Could not load test class", e);
             } catch (IllegalArgumentException e) {
@@ -336,6 +339,9 @@ public class ReproGoal extends AbstractMojo {
             result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
             if (configurationFuzzing) {
                 failedConfig.putAll(ConfigTracker.getConfigMap());
+                if (printConfig) {
+                    printMap(parentConfig, out);
+                }
                 printDiffConfig(parentConfig, failedConfig, out);
             }
 
@@ -385,6 +391,11 @@ public class ReproGoal extends AbstractMojo {
                 out.println("[PARENT-CONFIG-NEW] " + failedKey + " -> " + failedValue);
             }
         }
+    }
 
+    private void printMap(Map<String, String> map, PrintStream out) {
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            out.println("[CONFIG-PRINT] " + entry.getKey() + " = " + entry.getValue());
+        }
     }
 }
