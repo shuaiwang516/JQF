@@ -23,7 +23,7 @@ public class ConfigTracker {
      * @param key
      * @param value
      */
-    public static void track(String key, String value) {
+    public synchronized static void track(String key, String value) {
         configMap.put(key, value);
     }
 
