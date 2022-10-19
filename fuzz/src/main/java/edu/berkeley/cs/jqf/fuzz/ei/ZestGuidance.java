@@ -130,6 +130,8 @@ public class ZestGuidance implements Guidance {
     /** Current input that's running -- valid after getInput() and before handleResult(). */
     protected Input<?> currentInput;
 
+    protected Input<?> parentInput;
+
     /** Index of currentInput in the savedInputs -- valid after seeds are processed (OK if this is inaccurate). */
     protected int currentParentInputIdx = 0;
 
@@ -665,7 +667,8 @@ public class ZestGuidance implements Guidance {
             if (!seedInputs.isEmpty()) {
                 // First, if we have some specific seeds, use those
                 currentInput = seedInputs.removeFirst();
-
+                parentInput = currentInput;
+                System.out.println("Current = Parent");
                 // Hopefully, the seeds will lead to new coverage and be added to saved inputs
 
             } else if (savedInputs.isEmpty()) {
@@ -678,6 +681,8 @@ public class ZestGuidance implements Guidance {
                 // Make fresh input using either list or maps
                 // infoLog("Spawning new input from thin air");
                 currentInput = createFreshInput();
+                parentInput = currentInput;
+                System.out.println("Current = Parent");
             } else {
                 // The number of children to produce is determined by how much of the coverage
                 // pool this parent input hits
@@ -695,7 +700,8 @@ public class ZestGuidance implements Guidance {
                     numChildrenGeneratedForCurrentParentInput = 0;
                 }
                 Input parent = savedInputs.get(currentParentInputIdx);
-
+                parentInput = parent;
+                System.out.println("Current != Parent");
                 // Fuzz it to get a new input
                 // infoLog("Mutating input: %s", parent.desc);
                 currentInput = parent.fuzz(random);
@@ -812,11 +818,18 @@ public class ZestGuidance implements Guidance {
                     // Save crash to disk
                     int crashIdx = uniqueFailures.size() - 1;
                     String saveFileName = String.format("id_%06d", crashIdx);
-                    String configFileName = String.format("config_%06d", crashIdx);
                     File saveFile = new File(savedFailuresDirectory, saveFileName);
-                    File configFile = new File(savedFailuresDirectory, configFileName);
                     GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
-                    GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
+                    if (Boolean.getBoolean("configFuzz")) {
+                        String parentFileName = String.format("parent_%06d", crashIdx);
+                        File parentFile = new File(savedFailuresDirectory, parentFileName);
+                        GuidanceException.wrap(() -> writeParentInputToFile(parentFile));
+
+                        String configFileName = String.format("config_%06d", crashIdx);
+                        File configFile = new File(savedFailuresDirectory, configFileName);
+                        GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
+                    }
+
                     infoLog("%s", "Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
@@ -843,11 +856,17 @@ public class ZestGuidance implements Guidance {
             if (LOG_ALL_INPUTS && (SAVE_ONLY_VALID ? valid : true)) {
                 File logDirectory = new File(allInputsDirectory, result.toString().toLowerCase());
                 String saveFileName = String.format("id_%09d", numTrials);
-                String configFileName = String.format("config_%06d", numTrials);
                 File saveFile = new File(logDirectory, saveFileName);
-                File configFile = new File(savedFailuresDirectory, configFileName);
                 GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
-                GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
+                if (Boolean.getBoolean("configFuzz")) {
+                    String parentFileName = String.format("parent_%06d", numTrials);
+                    File parentFile = new File(savedFailuresDirectory, parentFileName);
+                    GuidanceException.wrap(() -> writeParentInputToFile(parentFile));
+
+                    String configFileName = String.format("config_%06d", numTrials);
+                    File configFile = new File(savedFailuresDirectory, configFileName);
+                    GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
+                }
             }
         });
     }
@@ -959,6 +978,16 @@ public class ZestGuidance implements Guidance {
     protected void writeCurrentInputToFile(File saveFile) throws IOException {
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(saveFile))) {
             for (Integer b : currentInput) {
+                assert (b >= 0 && b < 256);
+                out.write(b);
+            }
+        }
+
+    }
+
+    protected void writeParentInputToFile(File parentFile) throws IOException {
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(parentFile))) {
+            for (Integer b : parentInput) {
                 assert (b >= 0 && b < 256);
                 out.write(b);
             }

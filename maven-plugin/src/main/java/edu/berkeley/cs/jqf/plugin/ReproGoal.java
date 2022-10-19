@@ -193,6 +193,11 @@ public class ReproGoal extends AbstractMojo {
     // changed configuration or not.
     private String isReproGoal = "repro.info";
 
+    /** Store parent configuration that pass and current configuration that fail; TreeMap to make sure looping is
+     * deterministic */
+    private Map<String, String> parentConfig = new TreeMap<>();
+    private Map<String, String> failedConfig = new TreeMap<>();
+
     public static void setEnv(Map<String, String> envMap, Log log) {
         try {
             Map<String, String> env = System.getenv();
@@ -285,6 +290,7 @@ public class ReproGoal extends AbstractMojo {
 
         File inputFile = new File(input);
         File configFile = new File(input.replace("id", "config"));
+
         if (!inputFile.exists() || !inputFile.canRead()) {
             throw new MojoExecutionException("Cannot find or open file " + input);
         }
@@ -292,15 +298,26 @@ public class ReproGoal extends AbstractMojo {
             throw new MojoExecutionException("Cannot find or open file " + configFile);
         }
 
-        // Pre round to get default configuration set
+        // Pre round to get default configuration set and parent round to get the parent configuration value set
         if (configurationFuzzing) {
+            File parentFile = new File(input.replace("id", "parent"));
+            if (!parentFile.exists() || !parentFile.canRead()) {
+                throw new MojoExecutionException("Cannot find or open file " + parentFile);
+            }
+
             // Pre round for test to get default configuration
             preRoundGuidance = new DefConfCollectionGuidance(out);
+            Result pre_result;
+            Result parent_result;
             try {
-                result = GuidedFuzzing.run(testClassName, testMethod, loader, preRoundGuidance, out);
-                log.debug("After preRound mapping size = " + ConfigTracker.getMapSize());
-                System.out.println("[JQF] After preRound mapping size = " + ConfigTracker.getMapSize());
+                pre_result = GuidedFuzzing.run(testClassName, testMethod, loader, preRoundGuidance, out);
+                log.debug("[JQF] Num of fuzzed config parameter = " + ConfigTracker.getMapSize());
+                System.out.println("[JQF] Num of fuzzed config parameter = " + ConfigTracker.getMapSize());
                 printChangedConfig(configFile, out);
+                // Parent round to get parent configuration change
+                guidance = new ReproGuidance(parentFile, null);
+                parent_result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
+                parentConfig.putAll(ConfigTracker.getConfigMap());
             } catch (ClassNotFoundException e) {
                 throw new MojoExecutionException("Could not load test class", e);
             } catch (IllegalArgumentException e) {
@@ -310,14 +327,22 @@ public class ReproGoal extends AbstractMojo {
             } catch (IOException e) {
                 throw new MojoExecutionException("Pre round error", e);
             }
-            if (!result.wasSuccessful()) {
+            if (!pre_result.wasSuccessful()) {
                 throw new MojoFailureException("Pre Round for Configuration Fuzzing is not successful");
+            }
+            if (!parent_result.wasSuccessful()) {
+                throw new MojoFailureException("Parent Round for Configuration Fuzzing is not successful");
             }
         }
 
         try {
             guidance = new ReproGuidance(inputFile, null);
             result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
+            if (configurationFuzzing) {
+                failedConfig.putAll(ConfigTracker.getConfigMap());
+                printDiffConfig(parentConfig, failedConfig, out);
+            }
+
         } catch (ClassNotFoundException e) {
             throw new MojoExecutionException("Could not load test class", e);
         } catch (IllegalArgumentException e) {
@@ -349,6 +374,24 @@ public class ReproGoal extends AbstractMojo {
         }
     }
 
+    private void printDiffConfig(Map<String, String> parent, Map<String, String> failed, PrintStream out) {
+        for (Map.Entry<String, String> entry : failed.entrySet()) {
+            String failedKey = entry.getKey();
+            String failedValue = entry.getValue();
+            if (parent.containsKey(failedKey)) {
+                String parentValue = parent.get(failedKey);
+                if (Objects.equals(failedValue, parentValue)) {
+                    out.println("[PARENT-CONFIG-SAME] " + failedKey + " = " + parentValue);
+                } else {
+                    out.println("[PARENT-CONFIG-DIFF] " + failedKey + " = " + parentValue + " -> " + failedValue);
+                }
+            } else {
+                out.println("[PARENT-CONFIG-NEW] " + failedKey + " -> " + failedValue);
+            }
+        }
+
+    }
+
     private void printChangedConfig(File configFile, PrintStream out) throws IOException {
         if (!configurationFuzzing || notPrintConfig) {
             return;
@@ -378,7 +421,7 @@ public class ReproGoal extends AbstractMojo {
             if (configMap.containsKey(key)) {
                 String defaultValue = configMap.get(key);
                 if (!Objects.equals(value, defaultValue)) {
-                    out.println("[CONFIG-CHANGE] " + key + " = " + defaultValue + " -> " + value);
+                    out.println("[DEF-CONFIG-CHANGE] " + key + " = " + defaultValue + " -> " + value);
                 }
             } else {
                 out.println("[CONFIG-CHANGE] " + key + " = no-default -> " + value);
