@@ -385,7 +385,10 @@ public class ReproGoal extends AbstractMojo {
             String failedValue = entry.getValue();
             if (parent.containsKey(failedKey)) {
                 String parentValue = parent.get(failedKey);
-                if (Objects.equals(failedValue, parentValue)) {
+                if (anyNull(failedValue, parentValue)) {
+                    continue;
+                }
+                else if (Objects.equals(failedValue, parentValue)) {
                     out.println("[PARENT-CONFIG-SAME] " + failedKey + " = " + parentValue);
                 } else {
                     out.println("[PARENT-CONFIG-DIFF] " + failedKey + " = " + parentValue + " -> " + failedValue);
@@ -394,6 +397,10 @@ public class ReproGoal extends AbstractMojo {
                 out.println("[PARENT-CONFIG-NEW] " + failedKey + " -> " + failedValue);
             }
         }
+    }
+
+    private boolean anyNull(String str1, String str2) {
+        return Objects.equals(str1, str2) && (str1 == null || str1.equals("null") || str1.equals(""));
     }
 
     private void printMap(Map<String, String> map, PrintStream out) {
