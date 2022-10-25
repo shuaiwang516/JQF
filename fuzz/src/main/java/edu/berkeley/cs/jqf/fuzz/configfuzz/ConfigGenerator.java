@@ -18,6 +18,8 @@ public class ConfigGenerator {
     private static Map<String, List<String>> paramConstraintMapping;
     /** Flag to print Debug Information */
     private static boolean debugEnabled = Boolean.getBoolean("generator.debug");
+    /** Flag to print Debug Information */
+    private static boolean notString = Boolean.getBoolean("generator.nostring");
 
     static {
         try {
@@ -68,7 +70,12 @@ public class ConfigGenerator {
             return String.valueOf(Math.abs(random.nextFloat()));
         }
         // for now we only fuzz numeric and boolean configuration parameters.
-        String returnStr = String.valueOf(random.nextBytes(10));
+        String returnStr;
+        if (notString) {
+            returnStr = value;
+        } else {
+            returnStr = String.valueOf(random.nextBytes(10));
+        }
         return returnStr;
     }
 
