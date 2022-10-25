@@ -380,6 +380,7 @@ public class ReproGoal extends AbstractMojo {
     }
 
     private void printDiffConfig(Map<String, String> parent, Map<String, String> failed, PrintStream out) {
+        out.println("[TEST]=" + testClassName + "#" + testMethod);
         for (Map.Entry<String, String> entry : failed.entrySet()) {
             String failedKey = entry.getKey();
             String failedValue = entry.getValue();
