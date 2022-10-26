@@ -195,6 +195,7 @@ public class ReproGoal extends AbstractMojo {
 
     /** Store parent configuration that pass and current configuration that fail; TreeMap to make sure looping is
      * deterministic */
+    private Map<String, String> defaultConfig = new TreeMap<>();
     private Map<String, String> parentConfig = new TreeMap<>();
     private Map<String, String> failedConfig = new TreeMap<>();
 
@@ -308,6 +309,10 @@ public class ReproGoal extends AbstractMojo {
             try {
                 out.println("==================================Pre-Round==================================");
                 pre_result = GuidedFuzzing.run(testClassName, testMethod, loader, preRoundGuidance, out);
+                defaultConfig.putAll(ConfigTracker.getConfigMap());
+                if (printConfig) {
+                    printMap(defaultConfig, out);
+                }
                 log.debug("[JQF] Num of fuzzed config parameter = " + ConfigTracker.getMapSize());
                 System.out.println("[JQF] Num of fuzzed config parameter = " + ConfigTracker.getMapSize());
 
@@ -332,6 +337,7 @@ public class ReproGoal extends AbstractMojo {
                 throw new MojoFailureException("Pre Round for Configuration Fuzzing is not successful");
             }
             if (!parent_result.wasSuccessful()) {
+                printDiffConfig(defaultConfig, parentConfig, out);
                 throw new MojoFailureException("Parent Round for Configuration Fuzzing is not successful");
             }
         }
