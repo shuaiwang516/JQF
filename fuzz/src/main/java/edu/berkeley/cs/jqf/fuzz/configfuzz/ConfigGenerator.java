@@ -74,7 +74,7 @@ public class ConfigGenerator {
         if (notString) {
             returnStr = value;
         } else {
-            returnStr = String.valueOf(random.nextBytes(10));
+            returnStr = new String(random.nextBytes(10));
         }
         return returnStr;
     }
