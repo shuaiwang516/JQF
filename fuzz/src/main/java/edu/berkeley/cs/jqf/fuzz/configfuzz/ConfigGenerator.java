@@ -5,6 +5,7 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
+import java.nio.charset.StandardCharsets;
 
 public class ConfigGenerator {
 
@@ -74,7 +75,10 @@ public class ConfigGenerator {
         if (notString) {
             returnStr = value;
         } else {
-            returnStr = new String(random.nextBytes(10));
+	    byte[] bytes = random.nextBytes(10);
+            returnStr = Base64.getEncoder().encodeToString(bytes);
+	    System.out.print("Key=" + name + ", bytes=");
+	    System.out.println(Arrays.toString(bytes));
         }
         return returnStr;
     }
