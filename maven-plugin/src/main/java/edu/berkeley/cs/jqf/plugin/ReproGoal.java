@@ -297,7 +297,7 @@ public class ReproGoal extends AbstractMojo {
 
         // Pre round to get default configuration set and parent round to get the parent configuration value set
         if (configurationFuzzing) {
-            File parentFile = new File(input.replace("id", "parent"));
+            File parentFile = new File(input.replace("id_", "parent_"));
             if (!parentFile.exists() || !parentFile.canRead()) {
                 throw new MojoExecutionException("Cannot find or open file " + parentFile);
             }
