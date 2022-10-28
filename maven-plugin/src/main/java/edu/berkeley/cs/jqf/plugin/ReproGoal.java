@@ -338,7 +338,8 @@ public class ReproGoal extends AbstractMojo {
             }
             if (!parent_result.wasSuccessful()) {
                 printDiffConfig(defaultConfig, parentConfig, out);
-                throw new MojoFailureException("Parent Round for Configuration Fuzzing is not successful");
+		out.println("Parent Round for Configuration Fuzzing is not successful");
+		//throw new MojoFailureException("Parent Round for Configuration Fuzzing is not successful");
             }
         }
 
