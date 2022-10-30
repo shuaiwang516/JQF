@@ -821,6 +821,10 @@ public class ZestGuidance implements Guidance {
                         String parentFileName = String.format("parent_%06d", crashIdx);
                         File parentFile = new File(savedFailuresDirectory, parentFileName);
                         GuidanceException.wrap(() -> writeParentInputToFile(parentFile));
+
+                        String configFileName = String.format("config_%06d", crashIdx);
+                        File configFile = new File(savedFailuresDirectory, configFileName);
+                        GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
                     }
 
                     infoLog("%s", "Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
@@ -855,6 +859,10 @@ public class ZestGuidance implements Guidance {
                     String parentFileName = String.format("parent_%06d", numTrials);
                     File parentFile = new File(savedFailuresDirectory, parentFileName);
                     GuidanceException.wrap(() -> writeParentInputToFile(parentFile));
+
+                    String configFileName = String.format("config_%06d", numTrials);
+                    File configFile = new File(savedFailuresDirectory, configFileName);
+                    GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
                 }
             }
         });
