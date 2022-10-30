@@ -353,6 +353,12 @@ public class ReproGoal extends AbstractMojo {
                     printMap(parentConfig, out);
                 }
                 printDiffConfig(parentConfig, failedConfig, out);
+
+                File configFile = new File(input.replace("id_", "config_"));
+                if (!configFile.exists() || !configFile.canRead()) {
+                    throw new MojoExecutionException("Cannot find or open file " + configFile);
+                }
+                checkConfigSame(getConfigFromFile(configFile),failedConfig);
             }
 
         } catch (ClassNotFoundException e) {
@@ -384,6 +390,40 @@ public class ReproGoal extends AbstractMojo {
         if (!result.wasSuccessful()) {
             throw new MojoFailureException("Test case produces a failure.");
         }
+    }
+
+    private void checkConfigSame(Map<String, String> failure, Map<String, String> repro) throws MojoExecutionException {
+        if (failure == null || repro == null) {
+            throw new MojoExecutionException("[Generator-Non-Deterministic] Configuration Map is null");
+        }
+        if (!repro.keySet().equals(failure.keySet())) {
+            throw new MojoExecutionException("[Generator-Non-Deterministic] Two Rounds have different Generated Set");
+        }
+        for (Map.Entry<String, String> entry : repro.entrySet()) {
+            String failedKey = entry.getKey();
+            String failedValue = entry.getValue();
+            String parentValue = failure.get(failedKey);
+            if (!Objects.equals(failedValue, parentValue)) {
+                throw new MojoExecutionException("[Generator-Non-Deterministic] Two Rounds have " +
+                        "different Generated value on " + failedKey + " = " + failedKey + " vs " + parentValue);
+            }
+        }
+    }
+
+    private Map<String, String> getConfigFromFile(File configFile) throws IOException {
+        Map<String, String> conf = new TreeMap<>();
+        BufferedReader br = new BufferedReader(new FileReader(configFile));
+        String line;
+        while ((line = br.readLine())!= null) {
+            String [] pair = line.split(ZestGuidance.configSeparator);
+            if (pair.length != 2) {
+                throw new IOException("Unable to split configuration parameter and value: " + line);
+            }
+            String key = pair[0];
+            String value = pair[1];
+            conf.put(key.trim(), value.trim());
+        }
+        return conf;
     }
 
     private void printDiffConfig(Map<String, String> parent, Map<String, String> failed, PrintStream out) {
