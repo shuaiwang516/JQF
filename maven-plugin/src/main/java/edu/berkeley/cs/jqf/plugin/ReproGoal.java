@@ -408,6 +408,7 @@ public class ReproGoal extends AbstractMojo {
                         "different Generated value on " + failedKey + " = " + failedKey + " vs " + parentValue);
             }
         }
+	System.out.println("[JQF] Generator is deterministic!");
     }
 
     private Map<String, String> getConfigFromFile(File configFile) throws IOException {
