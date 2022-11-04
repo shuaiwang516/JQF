@@ -15,6 +15,7 @@ Must have:
 
 Optional:
 - -Dgenerator.debug
+- -Dtarget   (change the output directory)
 
 ## Reproduce
 ```
