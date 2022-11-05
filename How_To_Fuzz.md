@@ -14,7 +14,9 @@ Must have:
 - -DconfigFuzz
 
 Optional:
+- -Dgenerator.nostring (If this option shows in fuzz goal then must show in repro goal)
 - -Dgenerator.debug
+- -Dtarget   (change the output directory)
 
 ## Reproduce
 ```
@@ -32,4 +34,5 @@ Must have:
   - -DconfigFuzz
 
 Optional:
+- -Dgenerator.nostring
 - -DnotPrintConfig (Do not print the changed configuration information)
