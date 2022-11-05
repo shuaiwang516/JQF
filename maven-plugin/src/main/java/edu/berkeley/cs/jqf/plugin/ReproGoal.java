@@ -405,7 +405,7 @@ public class ReproGoal extends AbstractMojo {
             String parentValue = failure.get(failedKey);
             if (!Objects.equals(failedValue, parentValue)) {
                 throw new MojoExecutionException("[Generator-Non-Deterministic] Two Rounds have " +
-                        "different Generated value on " + failedKey + " = " + failedKey + " vs " + parentValue);
+                        "different Generated value on " + failedKey + " = " + failedValue + " vs " + parentValue);
             }
         }
     }
