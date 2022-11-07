@@ -14,6 +14,7 @@ Must have:
 - -DconfigFuzz
 
 Optional:
+- -Dannotation.instrument (Automatically add @RunWith, @Fuzz annotation)
 - -Dgenerator.nostring (If this option shows in fuzz goal then must show in repro goal)
 - -Dgenerator.debug
 - -Dtarget   (change the output directory)
@@ -34,5 +35,6 @@ Must have:
   - -DconfigFuzz
 
 Optional:
+- -Dannotation.instrument (Automatically add @RunWith, @Fuzz annotation)
 - -Dgenerator.nostring
 - -DnotPrintConfig (Do not print the changed configuration information)
