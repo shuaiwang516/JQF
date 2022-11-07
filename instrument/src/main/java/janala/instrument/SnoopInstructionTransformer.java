@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
+import edu.berkeley.cs.jqf.instrument.instrumentTest.Debug;
 import edu.berkeley.cs.jqf.instrument.instrumentTest.FuzzAnnotationCFT;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -86,7 +87,6 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
   synchronized public byte[] transform(ClassLoader loader, String cname, Class<?> classBeingRedefined,
       ProtectionDomain d, byte[] cbuf)
     throws IllegalClassFormatException {
-
     if(cname == null) {
       // Do not instrument lambdas
       return null;
@@ -110,7 +110,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
             if (Arrays.equals(cbuf, origBytes)) {
               byte[] instBytes = Files.readAllBytes(cachedFile.toPath());
               println(" Found in disk-cache!");
-              return FuzzAnnotationCFT.transf(loader, cname, classBeingRedefined, d, instBytes);
+              return instBytes;
             }
           } catch (IOException e) {
             print(" <cache error> ");
@@ -128,7 +128,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
 
         cr.accept(cv, 0);
 
-        ret = FuzzAnnotationCFT.transf(loader, cname, classBeingRedefined, d, cw.toByteArray());
+        ret = cw.toByteArray();
       } catch (Throwable e) {
         println("\n[WARNING] Could not instrument " + cname);
         if (verbose) {

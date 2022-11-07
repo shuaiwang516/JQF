@@ -28,7 +28,6 @@
  */
 package edu.berkeley.cs.jqf.instrument;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +37,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
+import edu.berkeley.cs.jqf.instrument.instrumentTest.FuzzAnnotationCFT;
 import janala.instrument.SnoopInstructionTransformer;
 
 /**
@@ -45,7 +45,9 @@ import janala.instrument.SnoopInstructionTransformer;
  */
 public class InstrumentingClassLoader extends URLClassLoader {
 
-    private ClassFileTransformer transformer = new SnoopInstructionTransformer();
+    private ClassFileTransformer covTransformer = new SnoopInstructionTransformer();
+    private ClassFileTransformer annotationTransformer = new FuzzAnnotationCFT();
+    private static boolean automateInst = Boolean.getBoolean("annotation.instrument");
 
     public InstrumentingClassLoader(URL[] urls, ClassLoader parent) {
         super(urls, parent);
@@ -83,7 +85,13 @@ public class InstrumentingClassLoader extends URLClassLoader {
 
         byte[] bytesToLoad;
         try {
-            byte[] instrumented = transformer.transform(this, internalName, null, null, originalBytecode);
+            byte[] instrumented;
+            if (automateInst) {
+                instrumented = annotationTransformer.transform(this, internalName, null, null, originalBytecode);
+                instrumented = covTransformer.transform(this, internalName, null, null, instrumented);
+            } else {
+                instrumented = covTransformer.transform(this, internalName, null, null, originalBytecode);
+            }
             if (instrumented != null) {
                 bytesToLoad = instrumented;
             } else {
