@@ -18,12 +18,19 @@ import java.util.*;
 
 public final class ConfigurationMojoHelper {
     private static final boolean DEBUG = Boolean.getBoolean("conffuzz.debug");
+    private static final String GENERATOR_CLASS_NAME = "org.apache.hadoop.conf.ConfigurationGenerator";
 
     private ConfigurationMojoHelper() {
         throw new AssertionError();
     }
 
     static Properties getSystemPropertiesFromSurefire(MavenProject project) {
+        // Note this does not properly account for:
+        // 1. interpolated maven variable expressions (e.g., ${name})
+        // 2. interpolated surefire property expressions (e.g., @{name})
+        // 3. plugin execution configuration
+        // 4. surefire thread number placeholders (i.e., ${surefire.threadNumber})
+        // 5. surefire fork number placeholders (i.e., ${surefire.forkNumber})
         Properties systemProperties = new Properties();
         for (Plugin p : project.getBuildPlugins()) {
             if (p.getArtifactId().contains("maven-surefire-plugin")) {
@@ -49,8 +56,8 @@ public final class ConfigurationMojoHelper {
             options.add("-Dclass=" + values.getTestClassName());
             options.add("-Dmethod=" + values.getTestMethodName());
             File agentJar = FileUtil.getClassPathElement(ConfFuzzAgent.class);
-            options.add(String.format("-javaagent:%s=%s,%s", agentJar.getAbsolutePath(), values.getTestClassName(),
-                                      values.getTestMethodName()));
+            options.add(String.format("-javaagent:%s=%s,%s,%s", agentJar.getAbsolutePath(), values.getTestClassName(),
+                                      values.getTestMethodName(), GENERATOR_CLASS_NAME));
             if (DEBUG) {
                 options.add(JvmLauncher.DEBUG_OPT + "5005");
             }

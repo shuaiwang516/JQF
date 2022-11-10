@@ -9,7 +9,7 @@ import edu.neu.ccs.prl.meringue.SystemPropertyUtil;
 import java.io.File;
 
 public final class FuzzForkMain {
-    public static final String TARGET_SUFFIX = "$$CONFIGFUZZ";
+    public static final String TARGET_SUFFIX = "$$CONFFUZZ";
     public static final String PROPERTIES_KEY = "conffuzz.properties";
 
     private FuzzForkMain() {
