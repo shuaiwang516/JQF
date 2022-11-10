@@ -57,14 +57,4 @@ public class ReplayGuidance implements Guidance {
     public Throwable getFailure() {
         return failure;
     }
-
-    public static File[] getInputs(File directory) {
-        List<File> list = new ArrayList<>();
-        for (File f : Objects.requireNonNull(directory.listFiles())) {
-            if (f.getName().startsWith("id_") && !f.getName().endsWith(ReplayData.EXTENSION)) {
-                list.add(f);
-            }
-        }
-        return list.toArray(new File[0]);
-    }
 }

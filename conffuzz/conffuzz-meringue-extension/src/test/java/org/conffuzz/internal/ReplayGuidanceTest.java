@@ -2,6 +2,7 @@ package org.conffuzz.internal;
 
 import edu.berkeley.cs.jqf.fuzz.configfuzz.ConfigTracker;
 import edu.berkeley.cs.jqf.fuzz.configfuzz.DefConfCollectionGuidance;
+import edu.berkeley.cs.jqf.fuzz.configfuzz.ReplayData;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
@@ -16,10 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ReplayGuidanceTest {
     @Rule
@@ -61,13 +59,23 @@ public class ReplayGuidanceTest {
     }
 
     static List<File> getFailureInducingInputs(File outputDirectory) {
-        return Arrays.asList(ReplayGuidance.getInputs(new File(outputDirectory, "failures")));
+        return Arrays.asList(getInputs(new File(outputDirectory, "failures")));
     }
 
     static void runCampaign(Guidance guidance) throws ClassNotFoundException {
         GuidedFuzzing.run(ReplayGuidanceTestExample.class.getName(), "test",
                           ReplayGuidanceTest.class.getClassLoader(),
                           guidance, new PrintStream(new NullOutputStream()));
+    }
+
+    public static File[] getInputs(File directory) {
+        List<File> list = new ArrayList<>();
+        for (File f : Objects.requireNonNull(directory.listFiles())) {
+            if (f.getName().startsWith("id_") && !f.getName().endsWith(ReplayData.EXTENSION)) {
+                list.add(f);
+            }
+        }
+        return list.toArray(new File[0]);
     }
 
     static class TestGuidance extends ZestGuidance {
