@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class ReplayData implements Serializable {
-    public static final String EXTENSION = ".replay";
+    public static final String PREFIX = "replay_";
     private static final long serialVersionUID = -6570908799876448036L;
     private final byte[] input;
     private final Map<String, String> configurationContext;
@@ -52,6 +52,6 @@ public final class ReplayData implements Serializable {
     }
 
     private static File toReplayFile(File saveFile) {
-        return new File(saveFile.getParentFile(), saveFile.getName() + EXTENSION);
+        return new File(saveFile.getParentFile(), PREFIX + saveFile.getName());
     }
 }

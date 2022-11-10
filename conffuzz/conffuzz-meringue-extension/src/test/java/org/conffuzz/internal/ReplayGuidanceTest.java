@@ -71,7 +71,7 @@ public class ReplayGuidanceTest {
     public static File[] getInputs(File directory) {
         List<File> list = new ArrayList<>();
         for (File f : Objects.requireNonNull(directory.listFiles())) {
-            if (f.getName().startsWith("id_") && !f.getName().endsWith(ReplayData.EXTENSION)) {
+            if (f.getName().startsWith("id_")) {
                 list.add(f);
             }
         }
