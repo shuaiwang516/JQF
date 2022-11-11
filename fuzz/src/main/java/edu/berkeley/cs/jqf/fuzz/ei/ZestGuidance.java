@@ -43,22 +43,12 @@ import java.io.PrintWriter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.configfuzz.ConfigTracker;
+import edu.berkeley.cs.jqf.fuzz.configfuzz.ReplayData;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
@@ -269,6 +259,12 @@ public class ZestGuidance implements Guidance {
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     protected final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
+
+    /**
+     * Unmodifiable copy of the configuration context {@see ConfigTracker#getConfigMap()} used to generate the
+     * input that is currently running.
+     */
+    private Map<String, String> currentConfigurationContext;
 
     /**
      * Creates a new Zest guidance instance with optional duration,
@@ -715,7 +711,8 @@ public class ZestGuidance implements Guidance {
                 this.branchCount = 0;
             }
         });
-
+        this.currentConfigurationContext =
+                Collections.unmodifiableMap(new LinkedHashMap<>(ConfigTracker.getConfigMap()));
         return createParameterStream();
     }
 
@@ -973,6 +970,7 @@ public class ZestGuidance implements Guidance {
     }
 
     protected void writeCurrentInputToFile(File saveFile) throws IOException {
+        ReplayData.writeReplayData(saveFile, currentConfigurationContext, currentInput);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(saveFile))) {
             for (Integer b : currentInput) {
                 assert (b >= 0 && b < 256);

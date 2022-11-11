@@ -59,4 +59,9 @@ public class ConfigTracker {
         }
         return configMap.size();
     }
+
+    public synchronized static void setMap(Map<String, String> map) {
+        configMap.clear();
+        configMap.putAll(map);
+    }
 }
