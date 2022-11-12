@@ -404,6 +404,9 @@ public class ReproGoal extends AbstractMojo {
             String failedValue = entry.getValue();
             String parentValue = failure.get(failedKey);
             if (!Objects.equals(failedValue, parentValue)) {
+                if (nullEquals(failedValue, parentValue)) {
+                    continue;
+                }
                 throw new MojoExecutionException("[Generator-Non-Deterministic] Two Rounds have " +
                         "different Generated value on " + failedKey + " = " + failedValue + " vs " + parentValue);
             }
@@ -450,6 +453,11 @@ public class ReproGoal extends AbstractMojo {
 
     private boolean anyNull(String str1, String str2) {
         return Objects.equals(str1, str2) && (str1 == null || str1.equals("null") || str1.equals(""));
+    }
+
+    private boolean nullEquals(String str1, String str2) {
+        return (str1 == null && (Objects.equals(str2, "null") || Objects.equals(str2, ""))) ||
+                (str2 == null && (Objects.equals(str1, "null") || Objects.equals(str1, "")));
     }
 
     private void printMap(Map<String, String> map, PrintStream out) {
