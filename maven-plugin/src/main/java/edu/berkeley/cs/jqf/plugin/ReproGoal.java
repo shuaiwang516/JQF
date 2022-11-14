@@ -51,6 +51,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.junit.runner.Result;
+import com.google.gson.*;
 
 /**
  * Maven plugin for replaying a test case produced by JQF.
@@ -188,6 +189,10 @@ public class ReproGoal extends AbstractMojo {
 
     @Parameter(property="printConfig")
     private boolean printConfig;
+
+    @Parameter(property="dumpConfig")
+    private boolean dumpConfig;
+
 
     // For configuration fuzzing project -- a flag to check whether to print out the current
     // changed configuration or not.
@@ -359,8 +364,12 @@ public class ReproGoal extends AbstractMojo {
                     throw new MojoExecutionException("Cannot find or open file " + configFile);
                 }
                 checkConfigSame(getConfigFromFile(configFile),failedConfig);
+                /* Output config json files here */
+                if (dumpConfig) {
+                    dumpConfig(parentConfig, input.replace("id_", "parent_config_") + ".json");
+                    dumpConfig(failedConfig, input.replace("id_", "failed_config_") + ".json");
+                }
             }
-
         } catch (ClassNotFoundException e) {
             throw new MojoExecutionException("Could not load test class", e);
         } catch (IllegalArgumentException e) {
@@ -383,7 +392,7 @@ public class ReproGoal extends AbstractMojo {
                     covOut.println(b);
                 }
             } catch (IOException e) {
-                log.error("Could not dump coverage info.", e);
+                throw new MojoExecutionException("Could not dump coverage info.", e);
             }
         }
 
@@ -392,12 +401,26 @@ public class ReproGoal extends AbstractMojo {
         }
     }
 
+    private void dumpConfig(Map<String, String> config, String dumpFileName) throws MojoFailureException{
+        Gson gson = new Gson();
+        String jsonStr = gson.toJson(config);
+        File f = new File(dumpFileName);
+        f.getParentFile().mkdirs();
+        try (PrintWriter out = new PrintWriter(f)) {
+            out.println(jsonStr);
+        } catch (FileNotFoundException e) {
+            throw new MojoFailureException("Could not dump config info.", e);
+        }
+    }
+
     private void checkConfigSame(Map<String, String> failure, Map<String, String> repro) throws MojoExecutionException {
         if (failure == null || repro == null) {
-            throw new MojoExecutionException("[Generator-Non-Deterministic] Configuration Map is null");
+            throw new MojoExecutionException("[Generator-Non-Deterministic]"
+                    + " Configuration Map is null");
         }
         if (!repro.keySet().equals(failure.keySet())) {
-            throw new MojoExecutionException("[Generator-Non-Deterministic] Two Rounds have different Generated Set");
+            throw new MojoExecutionException("[Generator-Non-Deterministic]" 
+                    + " Two Rounds have different Generated Set");
         }
         for (Map.Entry<String, String> entry : repro.entrySet()) {
             String failedKey = entry.getKey();
@@ -407,11 +430,12 @@ public class ReproGoal extends AbstractMojo {
                 if (nullEquals(failedValue, parentValue)) {
                     continue;
                 }
-                throw new MojoExecutionException("[Generator-Non-Deterministic] Two Rounds have " +
-                        "different Generated value on " + failedKey + " = " + failedValue + " vs " + parentValue);
+                throw new MojoExecutionException("[Generator-Non-Deterministic]"
+                        + " Two Rounds have different Generated value on " 
+                        + failedKey + " = " + failedValue + " vs " + parentValue);
             }
         }
-	System.out.println("[JQF] Generator is deterministic!");
+        System.out.println("[JQF] Generator is deterministic!");
     }
 
     private Map<String, String> getConfigFromFile(File configFile) throws IOException {
