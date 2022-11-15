@@ -51,7 +51,9 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.junit.runner.Result;
-import com.google.gson.*;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.Gson;
 
 /**
  * Maven plugin for replaying a test case produced by JQF.
@@ -190,8 +192,8 @@ public class ReproGoal extends AbstractMojo {
     @Parameter(property="printConfig")
     private boolean printConfig;
 
-    @Parameter(property="dumpConfig")
-    private boolean dumpConfig;
+    @Parameter(property="dumpParentConfig")
+    private boolean dumpParentConfig;
 
 
     // For configuration fuzzing project -- a flag to check whether to print out the current
@@ -359,15 +361,14 @@ public class ReproGoal extends AbstractMojo {
                 }
                 printDiffConfig(parentConfig, failedConfig, out);
 
-                File configFile = new File(input.replace("id_", "config_"));
+                File configFile = new File(input.replace("id_", "config_") + ".json");
                 if (!configFile.exists() || !configFile.canRead()) {
                     throw new MojoExecutionException("Cannot find or open file " + configFile);
                 }
                 checkConfigSame(getConfigFromFile(configFile),failedConfig);
                 /* Output config json files here */
-                if (dumpConfig) {
+                if (dumpParentConfig) {
                     dumpConfig(parentConfig, input.replace("id_", "parent_config_") + ".json");
-                    dumpConfig(failedConfig, input.replace("id_", "failed_config_") + ".json");
                 }
             }
         } catch (ClassNotFoundException e) {
@@ -392,7 +393,7 @@ public class ReproGoal extends AbstractMojo {
                     covOut.println(b);
                 }
             } catch (IOException e) {
-                throw new MojoExecutionException("Could not dump coverage info.", e);
+                log.error("Could not dump coverage info.", e);
             }
         }
 
@@ -402,7 +403,7 @@ public class ReproGoal extends AbstractMojo {
     }
 
     private void dumpConfig(Map<String, String> config, String dumpFileName) throws MojoFailureException{
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder().serializeNulls().create();
         String jsonStr = gson.toJson(config);
         File f = new File(dumpFileName);
         f.getParentFile().mkdirs();
@@ -418,7 +419,7 @@ public class ReproGoal extends AbstractMojo {
             throw new MojoExecutionException("[Generator-Non-Deterministic]"
                     + " Configuration Map is null");
         }
-        if (!repro.keySet().equals(failure.keySet())) {
+        if (!repro.keySet().containsAll(failure.keySet())) {
             throw new MojoExecutionException("[Generator-Non-Deterministic]" 
                     + " Two Rounds have different Generated Set");
         }
@@ -427,9 +428,6 @@ public class ReproGoal extends AbstractMojo {
             String failedValue = entry.getValue();
             String parentValue = failure.get(failedKey);
             if (!Objects.equals(failedValue, parentValue)) {
-                if (nullEquals(failedValue, parentValue)) {
-                    continue;
-                }
                 throw new MojoExecutionException("[Generator-Non-Deterministic]"
                         + " Two Rounds have different Generated value on " 
                         + failedKey + " = " + failedValue + " vs " + parentValue);
@@ -439,19 +437,10 @@ public class ReproGoal extends AbstractMojo {
     }
 
     private Map<String, String> getConfigFromFile(File configFile) throws IOException {
-        Map<String, String> conf = new TreeMap<>();
+        Gson gson = new Gson();
         BufferedReader br = new BufferedReader(new FileReader(configFile));
-        String line;
-        while ((line = br.readLine())!= null) {
-            String [] pair = line.split(ZestGuidance.configSeparator);
-            if (pair.length != 2) {
-                throw new IOException("Unable to split configuration parameter and value: " + line);
-            }
-            String key = pair[0];
-            String value = pair[1];
-            conf.put(key.trim(), value.trim());
-        }
-        return conf;
+        String line = br.readLine();
+        return (Map<String, String>)gson.fromJson(line, Map.class);
     }
 
     private void printDiffConfig(Map<String, String> parent, Map<String, String> failed, PrintStream out) {
@@ -477,11 +466,6 @@ public class ReproGoal extends AbstractMojo {
 
     private boolean anyNull(String str1, String str2) {
         return Objects.equals(str1, str2) && (str1 == null || str1.equals("null") || str1.equals(""));
-    }
-
-    private boolean nullEquals(String str1, String str2) {
-        return (str1 == null && (Objects.equals(str2, "null") || Objects.equals(str2, ""))) ||
-                (str2 == null && (Objects.equals(str1, "null") || Objects.equals(str1, "")));
     }
 
     private void printMap(Map<String, String> map, PrintStream out) {
