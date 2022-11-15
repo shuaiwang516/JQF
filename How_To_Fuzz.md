@@ -38,3 +38,4 @@ Optional:
 - -Dannotation.instrument (Automatically add @RunWith, @Fuzz annotation)
 - -Dgenerator.nostring
 - -DnotPrintConfig (Do not print the changed configuration information)
+- -DdumpParentConfig (dump parent configuration JSONs into fuzz-result/)

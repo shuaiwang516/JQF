@@ -68,6 +68,9 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import static java.lang.Math.ceil;
 import static java.lang.Math.log;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.Gson;
+
 /**
  * A guidance that performs coverage-guided fuzzing using two coverage maps,
  * one for all inputs and one for valid inputs only.
@@ -819,7 +822,7 @@ public class ZestGuidance implements Guidance {
                         File parentFile = new File(savedFailuresDirectory, parentFileName);
                         GuidanceException.wrap(() -> writeParentInputToFile(parentFile));
 
-                        String configFileName = String.format("config_%06d", crashIdx);
+                        String configFileName = String.format("config_%06d.json", crashIdx);
                         File configFile = new File(savedFailuresDirectory, configFileName);
                         GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
                     }
@@ -857,7 +860,7 @@ public class ZestGuidance implements Guidance {
                     File parentFile = new File(savedFailuresDirectory, parentFileName);
                     GuidanceException.wrap(() -> writeParentInputToFile(parentFile));
 
-                    String configFileName = String.format("config_%06d", numTrials);
+                    String configFileName = String.format("config_%06d.json", numTrials);
                     File configFile = new File(savedFailuresDirectory, configFileName);
                     GuidanceException.wrap(() -> writeCurrentConfigToFile(configFile));
                 }
@@ -994,12 +997,10 @@ public class ZestGuidance implements Guidance {
         // No need to write configuration file if it is not configuration fuzzing
         if (!Boolean.getBoolean("configFuzz"))
             return;
-        try (PrintWriter out = new PrintWriter(new FileWriter(configFile, false))) {
-            for (Map.Entry<String, String> entry : ConfigTracker.getConfigMap().entrySet()) {
-                String paramName = entry.getKey();
-                String paramValue = entry.getValue();
-                out.write(paramName + configSeparator + paramValue + "\n");
-            }
+        Gson gson = new GsonBuilder().serializeNulls().create();
+        String jsonStr = gson.toJson(ConfigTracker.getConfigMap());
+        try (PrintWriter out = new PrintWriter(configFile)) {
+            out.println(jsonStr);
         }
     }
 
