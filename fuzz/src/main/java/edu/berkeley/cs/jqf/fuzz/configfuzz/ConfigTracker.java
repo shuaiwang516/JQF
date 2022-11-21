@@ -12,18 +12,34 @@ public class ConfigTracker {
     /** configMap records the exercised configuration parameter by the current fuzzed test */
     private static Map<String, String> configMap = new TreeMap<>();
 
+    /** externalConfigMap records the configuration parameter used by the current fuzzed test without setting */
+    private static Map<String, String> externalConfigMap = new TreeMap<>();
+
     public ConfigTracker(String curTestClass, String curTestName) {
         this.curTestClass = curTestClass;
         this.curTestName = curTestName;
     }
 
     /**
-     * Called by projects' configuration API to record exercised
+     * Called by projects' configuration API to record used
      * configuration parameter by test
      * @param key
      * @param value
      */
-    public synchronized static void track(String key, String value) {
+    public synchronized static void trackGet(String key, String value) {
+        if (!configMap.containsKey(key)) {
+            externalConfigMap.put(key, value);
+        }
+        configMap.put(key, value);
+    }
+
+    /**
+     * Called by projects' configuration API to record 
+     * configuration parameter set by test
+     * @param key
+     * @param value
+     */
+    public synchronized static void trackSet(String key, String value) {
         configMap.put(key, value);
     }
 
@@ -33,7 +49,7 @@ public class ConfigTracker {
      */
     public synchronized static Map<String, String> getConfigMap() {
         Map<String, String> res = new TreeMap<>();
-        res.putAll(configMap);
+        res.putAll(externalConfigMap);
         return res;
     }
 
@@ -42,26 +58,28 @@ public class ConfigTracker {
      * @return True if clear successes, else false
      */
     public static Boolean freshMap() {
-        configMap = new TreeMap<>();
-        if (configMap.size() == 0) {
+        configMap.clear();
+        externalConfigMap.clear();
+        if (configMap.size() == 0 && externalConfigMap.size() == 0) {
             return true;
         }
         return false;
     }
 
     /**
-     * Get the size of configMap
+     * Get the size of externalConfigMap
      * @return
      */
     public synchronized static int getMapSize() {
-        if (configMap == null) {
+        if (externalConfigMap == null) {
             return 0;
         }
-        return configMap.size();
+        return externalConfigMap.size();
     }
 
     public synchronized static void setMap(Map<String, String> map) {
+        externalConfigMap.clear();
         configMap.clear();
-        configMap.putAll(map);
+        externalConfigMap.putAll(map);
     }
 }
